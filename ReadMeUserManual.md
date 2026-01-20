@@ -2,70 +2,84 @@
 
 Welcome to **QualCode Vibed**, a tool designed for qualitative researchers who want a clean, visual, and flexible environment for coding transcripts.
 
-## **Getting Started**
+**Live Web Version:** [https://working-futures.github.io/QualCode-Vibed/](https://working-futures.github.io/QualCode-Vibed/)
 
-1. **Launch the App:** Open the application. You will see the "Project Launcher".  
-2. **New Project:** Click "New Project" to start fresh.  
-3. **Open Project:** Click "Open Project" to load a previously saved .qlab file.
+---
 
-## **The Workspace Interface**
+## **How it Works: Distributed Analysis**
 
-### **1\. Left Sidebar (Documents & Codes)**
+QualCode Vibed runs entirely in your browser using **local files**. This means your data never leaves your computer unless you explicitly share the project file.
 
-* **Documents:**  
-  * Click the **\+** icon to import transcripts (.txt or .docx).  
-  * Click a document name to load it into the Editor.  
-  * Hover over a document and click **...** to Rename or Delete it.  
-* **Codes:**  
-  * This tree shows your coding hierarchy.  
-  * **Drag & Drop:** Drag a code onto another to nest it (create a folder) or merge them.
-  * **Right-click** a code to: Rename, Delete, Move, or Merge.  
-  * **Create Code:** Click the \+ button. If a code is selected, the new code will be a child (sub-code).  
-  * **Search:** Use the filter bar to find codes quickly.
-  * **Import/Export:** Use the buttons at the top/bottom of this panel to load or save your Codebook (Excel/CSV).
+### **Workflow for Teams**
+Since the app does not use a central cloud database, teams work by sharing the **Project File (.qlab)**.
 
-### **2\. The Editor (Center)**
+#### **Scenario A: Single Analyst**
+1. Open the app.
+2. Import transcripts.
+3. Code your data.
+4. Click **Save** to download your work to your computer.
 
-This is your main work surface.
+#### **Scenario B: Team Collaboration (Pass the Project)**
+1. **Lead Researcher** creates a new project, adds the Codebook (definitions and colors), and saves the file (e.g., `Project_Start.qlab`).
+2. The Lead emails this file to **Analyst A**.
+3. **Analyst A** opens the link, loads `Project_Start.qlab`, and codes their assigned transcripts.
+4. Analyst A clicks **Save** (e.g., `Project_AnalystA_Coding.qlab`) and sends it back to the Lead.
 
-* **Coding:**  
-  1. Select a code from the Left Sidebar.
-  2. **"In Your Hand":** Your cursor will change to a highlighter icon, indicating you are ready to code.
-  3. Highlight text in the transcript with your mouse.  
-  4. The text will be underlined in the code's color.  
-* **Removing Codes:** Click on any colored underline. A menu will appear; click "Remove Highlight".  
-* **Focus Mode:** Click the colored bracket { in the left margin to "Focus" on that code. All other codes will fade out, letting you see just that theme. Click again to reset.
+#### **Scenario C: Parallel Coding**
+1. The Lead sends the starting file to both **Analyst A** and **Analyst B**.
+2. They each work on their own files.
+3. *Note: Currently, you cannot automatically merge two project files. The Lead must manually combine the results if they want a single master file, or simply analyze the exported CSVs separately.*
 
-### **3\. Right Sidebar (Memos)**
+---
 
-* Click the **Memos** button (top right) to toggle this panel.  
-* **Document Memo:** Notes specific to the currently open transcript.  
-* **Project Journal:** Global notes for your research project.  
-* **Export:** Click the Download icon in the Memo header to save all notes to a text file.
+## **Key Features**
 
-## **Analysis Dashboard**
+### **1. Getting Started**
+1. **Launch:** Open the website.
+2. **New Project:** Click "New Project" to start fresh.
+3. **Open Project:** Click "Open Project" to load a .qlab file from your computer.
 
-Click the **"Analysis"** tab in the top header.
+### **2. The Workspace**
 
-* **Chart:** View bar charts of code frequency.  
-* **Matrix:** See a table of Code Frequency per Document.  
-* **Segments:** View a list of every coded text segment.  
-* **Export CSV:** Download the data for use in Excel, SPSS, or R.
+#### **Left Sidebar (Documents & Codes)**
+* **Documents:**
+  * Click **+** to import transcripts (.txt or .docx).
+  * Hover over a document to Rename or Delete it.
+* **Codes:**
+  * **Create:** Click **+** to add a code.
+  * **Nest:** Drag a code onto another to make it a sub-code.
+  * **Edit:** Right-click to Rename, Delete, or change Color.
+  * **Import:** Load a pre-defined codebook from Excel/CSV.
 
-## **Global Search**
-Use the search bar at the very top of the app to search for text across **all** your documents at once.
-* Click a result to jump directly to that transcript.
+#### **The Editor (Center)**
+This is where you code.
+1. Select a code from the Left Sidebar.
+2. Highlight text in the transcript.
+3. The text is underlined in that code's color.
+4. **Remove:** Click the underline and select "Remove Highlight".
 
-## **Customization (The "Vibe")**
+#### **Right Sidebar (Memos)**
+* Click **Memos** (top right) to toggle.
+* **Document Memo:** Notes specific to the current transcript.
+* **Project Memo:** Global research journal.
 
-Click the **Eye Icon** (Visual Settings) in the top right header.
+### **3. Analysis Dashboard**
+Click the **"Analysis"** tab at the top.
+* **Charts:** Visual breakdown of code frequency.
+* **Matrix:** Table showing Code usage per Document.
+* **Export:** Download all data as CSV (Excel compatible) for further statistical analysis.
 
-* **Theme:** Choose from presets like "Hobbit Study" (parchment), "Deep Ocean" (dark mode), or "Corporate".  
-* **Typography:** Change font (Times New Roman, Arial, Dyslexic) and size.  
-* **Sidebar Width:** Adjust the width of the menu to fit your screen.
+---
 
-## **Saving Your Work**
+## **Saving & Security**
+* **Privacy:** All data is processed **locally** in your browser. Nothing is sent to a server.
+* **Saving:** Click the **Save** button (top right header).
+  * This triggers a **Download** of a `.qlab` file.
+  * Store this file on your computer, Google Drive, or OneDrive.
+* **Backups:** We recommend creating a new save file periodically (e.g., `Project_v1.qlab`, `Project_v2.qlab`) so you can roll back if needed.
 
-* **Save Project:** Click the **Save** button in the top right header. This downloads a .qlab file.  
-  * *Tip: Save often\!*  
-* **Print/PDF:** Click the **Print/PDF** button above the editor to create a clean PDF of your coded transcript.
+---
+
+## **Troubleshooting**
+* **White Screen?** Refresh the page. Ensure you are using a modern browser (Chrome, Edge, Firefox, Safari).
+* **Lost Data?** Since the app runs locally, if you close the tab without clicking "Save", data is lost. **Save frequently!**
