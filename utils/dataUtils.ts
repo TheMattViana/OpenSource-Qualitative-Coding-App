@@ -141,68 +141,93 @@ export const saveProjectFile = (project: Project) => {
 };
 
 // --- Import Logic (CSV & XLSX) ---
-export const parseCodebookFile = async (file: File): Promise<Code[]> => {
-  if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-    return parseCodebookExcel(file);
-  } else {
-    const text = await file.text();
-    return parseCodebookCSV(text);
+
+const findColumnValue = (row: any, candidates: string[]): string => {
+  if (!row) return '';
+  const rowKeys = Object.keys(row);
+  for (const candidate of candidates) {
+    const foundKey = rowKeys.find(k => k.toLowerCase() === candidate.toLowerCase());
+    if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) return row[foundKey].toString().trim();
   }
+  return '';
 };
 
-const parseCodebookExcel = async (file: File): Promise<Code[]> => {
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data);
-  const firstSheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[firstSheetName];
-  const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-  return jsonData.map(row => ({
-    id: generateId(),
-    name: (row['Name'] || row['Code'] || row['Label'] || 'Untitled Code').toString().trim(),
-    description: (row['Description'] || row['Definition'] || '').toString().trim(),
-    color: (row['Color'] || `#${Math.floor(Math.random() * 16777215).toString(16)}`).toString().trim(),
-    parentId: row['ParentID'] ? row['ParentID'].toString().trim() : undefined
-  }));
-};
-
-export const parseCodebookCSV = (csvText: string): Code[] => {
-  const lines = csvText.split(/\r?\n/);
+const parseCSVToJson = (csvText: string): any[] => {
+  const lines = csvText.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
 
-  const csvRegex = /(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g;
   const parseLine = (line: string) => {
     const result: string[] = [];
-    let match;
-    const regex = new RegExp(csvRegex);
-    while ((match = regex.exec(line)) !== null) {
-      let val = match[1] ? match[1].replace(/""/g, '"') : match[2];
-      result.push(val ? val.trim() : '');
+    let start = 0;
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQuotes = !inQuotes; }
+      else if (line[i] === ',' && !inQuotes) {
+        let val = line.substring(start, i).trim();
+        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1).replace(/""/g, '"');
+        result.push(val);
+        start = i + 1;
+      }
     }
-    return result[result.length - 1] === '' ? result.slice(0, -1) : result;
+    let lastVal = line.substring(start).trim();
+    if (lastVal.startsWith('"') && lastVal.endsWith('"')) lastVal = lastVal.slice(1, -1).replace(/""/g, '"');
+    result.push(lastVal);
+    return result;
   };
 
-  const headerRow = parseLine(lines[0]).map(h => h.toLowerCase().trim());
-  const map = {
-    name: headerRow.findIndex(h => h.includes('name') || h.includes('code') || h.includes('label')),
-    desc: headerRow.findIndex(h => h.includes('desc') || h.includes('definition')),
-    color: headerRow.findIndex(h => h.includes('color')),
-  };
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const values = parseLine(line);
+    const obj: any = {};
+    headers.forEach((h, i) => {
+      if (values[i] !== undefined) obj[h] = values[i];
+    });
+    return obj;
+  });
+};
 
-  const newCodes: Code[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const row = parseLine(lines[i]);
-    if (map.name > -1 && row[map.name]) {
-      newCodes.push({
-        id: generateId(),
-        name: row[map.name].trim(),
-        description: map.desc > -1 ? row[map.desc].trim() : '',
-        color: map.color > -1 && row[map.color] ? row[map.color].trim() : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-      });
-    }
+export const parseCodebookFile = async (file: File): Promise<Code[]> => {
+  let rawCodes: any[] = [];
+
+  if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    rawCodes = XLSX.utils.sheet_to_json(worksheet);
+  } else {
+    const text = await file.text();
+    rawCodes = parseCSVToJson(text);
   }
-  return newCodes;
+
+  // Pass 1: Extract Data
+  const parsedCodes = rawCodes.map(row => {
+    return {
+      id: generateId(),
+      name: findColumnValue(row, ['name', 'code', 'label', 'title', 'code name']),
+      description: findColumnValue(row, ['description', 'definition', 'desc', 'meaning', 'note']),
+      color: findColumnValue(row, ['color', 'colour', 'hex']) || `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+      rawParent: findColumnValue(row, ['parent', 'parentid', 'parent_id', 'parent name', 'parent code'])
+    };
+  }).filter(c => c.name);
+
+  // Pass 2: Resolve Parent Relationships (Internal to file)
+  const nameToId = new Map<string, string>();
+  parsedCodes.forEach(c => nameToId.set(c.name.toLowerCase(), c.id));
+
+  return parsedCodes.map(c => {
+    let parentId = undefined;
+    if (c.rawParent) {
+      parentId = nameToId.get(c.rawParent.toLowerCase());
+    }
+    return {
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      color: c.color,
+      parentId: parentId
+    };
+  });
 };
 
 export const mergeCodesInProject = (project: Project, sourceCodeId: string, targetCodeId: string): Project => {
@@ -216,4 +241,26 @@ export const mergeCodesInProject = (project: Project, sourceCodeId: string, targ
     selections: updatedSelections,
     codes: updatedCodes
   };
+};
+
+export const smartSplitContent = (text: string): string[] => {
+  if (!text) return [];
+  const cleanText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const paragraphs = cleanText.split('\n');
+  const finalLines: string[] = [];
+
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+    // Split sentences: Punctuation (quote optionally) follow by space then Capital Letter
+    // Lookbehind for common abbreviations to avoid splitting "Mr. Smith"
+    const sentences = trimmed
+      .replace(/((?<!Mr|Mrs|Ms|Dr|Prof|Sr|Jr)[.!?]["”']?)\s+(?=[A-Z])/g, "$1|SPLIT_SENTENCE|")
+      .split("|SPLIT_SENTENCE|");
+
+    sentences.forEach(s => {
+      if (s.trim()) finalLines.push(s.trim());
+    });
+  }
+  return finalLines;
 };

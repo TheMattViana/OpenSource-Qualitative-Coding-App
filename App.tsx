@@ -8,7 +8,7 @@ import { Codebook } from './components/Codebook';
 import { VisualSettings } from './components/VisualSettings';
 import { ProjectLauncher } from './components/ProjectLauncher';
 import { MemoSidebar } from './components/MemoSidebar';
-import { exportProjectData, parseCodebookFile, mergeCodesInProject, saveProjectFile, printTranscript, exportCodebook, generateId } from './utils/dataUtils';
+import { exportProjectData, parseCodebookFile, mergeCodesInProject, saveProjectFile, printTranscript, exportCodebook, generateId, smartSplitContent } from './utils/dataUtils';
 import { removeHighlightsForCode } from './utils/highlightUtils';
 import { generateChildColor, generateColor } from './utils/colorUtils';
 import { applyTheme } from './utils/themeUtils';
@@ -154,11 +154,37 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const newCodes = await parseCodebookFile(file);
-      const uniqueNewCodes = newCodes.filter(nc => !project.codes.some(c => c.name === nc.name));
-      handleProjectUpdate({ ...project, codes: [...project.codes, ...uniqueNewCodes] });
-      if (uniqueNewCodes.length < newCodes.length) alert(`Imported ${uniqueNewCodes.length} codes (skipped duplicates).`);
+      const parsedCodes = await parseCodebookFile(file);
+
+      const existingNameMap = new Map<string, string>();
+      project.codes.forEach(c => existingNameMap.set(c.name.toLowerCase(), c.id));
+
+      const codesToAdd: Code[] = [];
+      const newNameToIdMap = new Map<string, string>();
+
+      parsedCodes.forEach(pc => {
+        const existingId = existingNameMap.get(pc.name.toLowerCase());
+        if (existingId) {
+          newNameToIdMap.set(pc.id, existingId);
+        } else {
+          newNameToIdMap.set(pc.id, pc.id);
+          codesToAdd.push(pc);
+        }
+      });
+
+      const finalCodes = codesToAdd.map(c => {
+        if (c.parentId) {
+          const mappedParentId = newNameToIdMap.get(c.parentId);
+          return { ...c, parentId: mappedParentId || undefined };
+        }
+        return c;
+      });
+
+      handleProjectUpdate({ ...project, codes: [...project.codes, ...finalCodes] });
+      alert(`Imported ${finalCodes.length} codes (skipped ${parsedCodes.length - finalCodes.length} duplicates).`);
+      e.target.value = '';
     } catch (err) {
+      console.error(err);
       alert("Failed to parse codebook. Ensure headers are correct.");
     }
   };
@@ -175,8 +201,8 @@ export default function App() {
       } else {
         rawText = await file.text();
       }
-      // Chunking Logic for Line Numbers
-      const lines = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
+
+      const lines = smartSplitContent(rawText);
       const formattedHtml = lines.map((line, index) =>
         `<div class="transcript-line" data-line="${index + 1}">${line}</div>`
       ).join('');
